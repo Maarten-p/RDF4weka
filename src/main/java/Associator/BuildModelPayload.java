@@ -6,8 +6,6 @@ public class BuildModelPayload {
 
 
     private String[] options;
-
-
     private String dataQuery;
     private String attributesQuery;
     private Algorithm algorithm;
@@ -17,7 +15,7 @@ public class BuildModelPayload {
         return options;
     }
 
-    public void setOptions(String[] options) {
+    private void setOptions(String[] options) {
         this.options = options;
     }
 
@@ -25,7 +23,7 @@ public class BuildModelPayload {
         return dataQuery;
     }
 
-    public void setDataQuery(String dataQuery) {
+    private void setDataQuery(String dataQuery) {
         this.dataQuery = dataQuery;
     }
 
@@ -33,7 +31,7 @@ public class BuildModelPayload {
         return attributesQuery;
     }
 
-    public void setAttributesQuery(String attributesQuery) {
+    private void setAttributesQuery(String attributesQuery) {
         this.attributesQuery = attributesQuery;
     }
 
@@ -45,7 +43,7 @@ public class BuildModelPayload {
         this.algorithm = algorithm;
     }
 
-    public String getMethod() {
+    private String getMethod() {
         return method;
     }
 
