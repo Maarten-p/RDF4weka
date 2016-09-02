@@ -1,10 +1,10 @@
 package Associator;
 
-public class FrequentItem implements Comparable<FrequentItem> {
-    int score;
-    String item;
+class FrequentItem implements Comparable<FrequentItem> {
+    private int score;
+    private String item;
 
-    public FrequentItem(int score, String item) {
+    FrequentItem(int score, String item) {
         this.score = score;
         this.item = item;
     }
@@ -18,7 +18,7 @@ public class FrequentItem implements Comparable<FrequentItem> {
         return score;
     }
 
-    public String getItem() {
+    private String getItem() {
         return item;
     }
 

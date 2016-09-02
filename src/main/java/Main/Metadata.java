@@ -20,7 +20,7 @@ public class Metadata {
         return runTime;
     }
 
-    public void setRunTime(long runTime) {
+    private void setRunTime(long runTime) {
         this.runTime = runTime;
     }
 
@@ -28,7 +28,7 @@ public class Metadata {
         return query;
     }
 
-    public void setQuery(String query) {
+    private void setQuery(String query) {
         this.query = query;
     }
 
@@ -44,7 +44,7 @@ public class Metadata {
         return totalRows;
     }
 
-    public void setTotalRows(int totalRows) {
+    private void setTotalRows(int totalRows) {
         this.totalRows = totalRows;
     }
 
@@ -52,7 +52,7 @@ public class Metadata {
         return options;
     }
 
-    public void setOptions(String options) {
+    private void setOptions(String options) {
         this.options = options;
     }
 

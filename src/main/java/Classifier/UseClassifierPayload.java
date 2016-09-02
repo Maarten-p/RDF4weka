@@ -12,7 +12,7 @@ public class UseClassifierPayload {
         return toClassify;
     }
 
-    public void setToClassify(String[][] toClassify) {
+    private void setToClassify(String[][] toClassify) {
         this.toClassify = toClassify;
     }
 

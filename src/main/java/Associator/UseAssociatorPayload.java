@@ -16,7 +16,7 @@ public class UseAssociatorPayload {
         return skills;
     }
 
-    void setSkills(List<String> skills) {
+    private void setSkills(List<String> skills) {
         this.skills = skills;
     }
 

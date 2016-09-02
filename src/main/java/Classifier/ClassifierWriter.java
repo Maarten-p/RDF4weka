@@ -5,7 +5,7 @@ import weka.core.Attribute;
 
 import java.util.List;
 
-public class ClassifierWriter {
+class ClassifierWriter {
 
     void toNativeFile(AbstractClassifier classifier, List<Attribute> newHeader, List<String> oldHeader, String uuid) {
         try {

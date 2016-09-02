@@ -18,6 +18,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RandomTreeBuilder {
@@ -26,7 +27,7 @@ public class RandomTreeBuilder {
 
     public Metadata buildModel(Repository repo, BuildModelPayload payload) {
         RepositoryConnection conn = repo.getConnection();
-        String queryString = payload.getQuery();
+        String queryString = payload.getDataQuery();
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
         try {
             TupleQueryResult result = tupleQuery.evaluate();
@@ -68,7 +69,6 @@ public class RandomTreeBuilder {
             setNewestUuid(uuid.toString());
             Evaluation test = new Evaluation(instanceList);
             test.evaluateModel(classifier, instanceList);
-            double[][] matrix = test.confusionMatrix();
             System.out.println(test.toSummaryString());
             ClassifierWriter writer = new ClassifierWriter();
             writer.toNativeFile(classifier, stringsToAttributes(transformedNames), names, uuid.toString());
@@ -85,9 +85,7 @@ public class RandomTreeBuilder {
         List<Double> tempList = new ArrayList<>();
         for (int i = 0; i < names.size() - 1; i++) {
             Double[] tempArray = ClassifierParser.parse(names.get(i), (bindingset.getValue(names.get(i))).stringValue());
-            for (Double value : tempArray) {
-                tempList.add(value);
-            }
+            tempList.addAll(Arrays.asList(tempArray));
         }
         double[] attList = new double[tempList.size() + 1];
         for (int i = 0; i < tempList.size(); i++) {

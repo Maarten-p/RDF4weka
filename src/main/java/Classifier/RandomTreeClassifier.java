@@ -37,7 +37,7 @@ public class RandomTreeClassifier {
         return classifier.distributionForInstance(instance);
     }
 
-    double[][] classifyInstances(double[][] matrix) throws Exception {
+    private double[][] classifyInstances(double[][] matrix) throws Exception {
         double[][] results = new double[matrix.length][matrix[0].length];
         for (int i = 0; i < matrix.length; i++) {
             results[i] = classifyInstance(matrix[i]);
@@ -45,7 +45,7 @@ public class RandomTreeClassifier {
         return results;
     }
 
-    double[][] parseStringMatrix(String[][] matrix) throws Exception {
+    private double[][] parseStringMatrix(String[][] matrix) throws Exception {
 
         double[][] results = new double[matrix.length][newheader.size() - 1];
         for (int i = 0; i < matrix.length; i++) {

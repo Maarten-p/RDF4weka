@@ -85,23 +85,27 @@ public class FrequentItemSetCalculator {
      */
     public void loadModel(Repository repo, UseAssociatorPayload payload) {
 
-        if (payload.getMethod().equals("triplestore")) {
-            loadModelFromTripleStore(repo, payload);
-        } else if (payload.getMethod().equals("native")) {
-            try {
-                loadModelFromNative(payload);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            try {
-                loadModelFromRDFFile(payload);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        switch (payload.getMethod()) {
+            case ("triplestore"):
+                loadModelFromTripleStore(repo, payload);
+                break;
+            case ("native"):
+                try {
+                    loadModelFromNative(payload);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            case ("RDFFile"):
+                try {
+                    loadModelFromRDFFile(payload);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
+            default:
+                throw new IllegalArgumentException();
         }
-
-
     }
 
     private void loadModelFromNative(UseAssociatorPayload payload) throws Exception {
@@ -132,10 +136,7 @@ public class FrequentItemSetCalculator {
         return convertedList;
     }
 
-    /**
-     * @param payload
-     * @throws Exception
-     */
+
     private void loadModelFromRDFFile(UseAssociatorPayload payload) throws Exception {
         File dataDir = new File(payload.getIdentifier() + ".rdf");
         Repository repo = new SailRepository(new MemoryStore());
@@ -176,7 +177,7 @@ public class FrequentItemSetCalculator {
 
     private void loadHashMapsFromTripleStore(Repository repo) {
         RepositoryConnection conn = repo.getConnection();
-        List<String> skillsAsStrings = skillsToStrings(getSkills(conn));
+        List<String> skillsAsStrings = skillsToStrings(getAttributes(conn));
         stringToIntegerHash = createStringToIntegerHash(skillsAsStrings);
         integerToStringHash = createIntegerToStringHash(skillsAsStrings);
         conn.close();
@@ -232,7 +233,7 @@ public class FrequentItemSetCalculator {
         }
     }
 
-    private TupleQueryResult getSkills(RepositoryConnection conn) {
+    private TupleQueryResult getAttributes(RepositoryConnection conn) {
         String queryString = "prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
                 "prefix esco: <http://data.europa.eu/esco/model#>\n" +
                 "prefix mu: <http://mu.semte.ch/vocabularies/core/>\n" +

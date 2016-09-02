@@ -22,7 +22,7 @@ import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.util.List;
 
-public class AssociatorWriter {
+class AssociatorWriter {
 
     void toNativeFile(AbstractAssociator someAssociator, String uuid) {
         try {
@@ -46,12 +46,13 @@ public class AssociatorWriter {
         IRI UUID = factory.createIRI(mu, "uuid");
         IRI wekaService = factory.createIRI(ns, "wekaService/" + uuid);
 
-        RDFWriter writer = null;
+        RDFWriter writer;
         try {
             FileOutputStream out = new FileOutputStream(uuid + ".rdf");
             writer = Rio.createWriter(RDFFormat.TURTLE, out);
         } catch (Exception e) {
             e.printStackTrace();
+            return;
         }
 
         writer.startRDF();

@@ -2,39 +2,53 @@ package Associator;
 
 import Main.Algorithm;
 import Main.Metadata;
-import org.eclipse.rdf4j.model.IRI;
-import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.QueryLanguage;
 import org.eclipse.rdf4j.query.TupleQuery;
 import org.eclipse.rdf4j.query.TupleQueryResult;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
-import org.eclipse.rdf4j.rio.RDFFormat;
 import weka.associations.*;
 import weka.core.Attribute;
 import weka.core.BinarySparseInstance;
 import weka.core.Instances;
 
-import java.io.File;
 import java.util.*;
 
 public class AssociatorBuilder {
 
+    /**
+     * These hashmaps are used to save memory and cpu cycles. When loading the AssociationRules each unique UUID is
+     * mapped to an integer. All calculations are done on these integers. When a result needs to be returned the
+     * integers are converted back into strings.
+     */
     private HashMap<String, Integer> stringToIntegerHash = new HashMap<>();
     private HashMap<Integer, String> integerToStringHash = new HashMap<>();
+
+    /**
+     * The UUID of the last build model so that it can be given to the user.
+     */
     private String newestUuid;
 
-    private BinarySparseInstance stringToInstance(HashMap<String, Integer> someTable, String newLine) {
+    /**
+     * Converts a string, consisting of comma-separated uuid strings, into an instance that can be used by weka. It uses
+     * a hashmap to convert the strings into a sparse vector.
+     *
+     * @param stringToSparseHash The hashmap which converts each uuid string into the appropriate indice in the sparse vector
+     * @param newLine            A string consisting of comma-separated uuid strings which represent a row in the data
+     * @return A new instance for weka
+     */
+    private BinarySparseInstance stringToInstance(HashMap<String, Integer> stringToSparseHash, String newLine) {
         String[] features = newLine.split(",");
         int[] indices = new int[features.length];
         for (int i = 0; i < features.length; i++) {
-            indices[i] = someTable.get(features[i]);
+            indices[i] = stringToSparseHash.get(features[i]);
         }
-        return new BinarySparseInstance(1, indices, someTable.size());
+        return new BinarySparseInstance(1, indices, stringToSparseHash.size());
     }
 
-    private TupleQueryResult getSkills(RepositoryConnection conn) {
+
+    private TupleQueryResult getAttributes(RepositoryConnection conn) {
         String queryString = "prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
                 "prefix esco: <http://data.europa.eu/esco/model#>\n" +
                 "prefix mu: <http://mu.semte.ch/vocabularies/core/>\n" +
@@ -65,14 +79,14 @@ public class AssociatorBuilder {
     }
 
     private ArrayList<Attribute> skillsToAttribute(List<String> skills) {
-        ArrayList<Attribute> atts = new ArrayList<>();
+        ArrayList<Attribute> attrs = new ArrayList<>();
         List<String> tempBooleanValues = new ArrayList<>();
         tempBooleanValues.add("0");
         tempBooleanValues.add("1");
         for (String skill : skills) {
-            atts.add(new Attribute(skill, tempBooleanValues));
+            attrs.add(new Attribute(skill, tempBooleanValues));
         }
-        return atts;
+        return attrs;
     }
 
     private HashMap<String, Integer> createStringToIntegerHash(List<String> skills) {
@@ -93,22 +107,21 @@ public class AssociatorBuilder {
 
     public Metadata buildModel(Repository repo, BuildModelPayload payload) throws IllegalArgumentException {
         RepositoryConnection conn = repo.getConnection();
-        String queryString = payload.getQuery();
+        String queryString = payload.getDataQuery();
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 
         try {
             TupleQueryResult result = tupleQuery.evaluate();
             List<String> bindingNames = result.getBindingNames();
-            TupleQueryResult skills = getSkills(conn);
+            TupleQueryResult skills = getAttributes(conn);
             ArrayList<String> skillsAsStrings = skillsToStrings(skills);
-            HashMap<String, Integer> someTable = createStringToIntegerHash(skillsAsStrings);
-            HashMap<Integer, String> intToStringTable = createIntegerToStringHash(skillsAsStrings);
+            HashMap<String, Integer> DenseToSparseHash = createStringToIntegerHash(skillsAsStrings);
             Instances instanceList = new Instances("theData", skillsToAttribute(skillsAsStrings), skillsAsStrings.size());
 
             while (result.hasNext()) {
                 BindingSet bindingSet = result.next();
                 String newLine = bindingSet.getValue(bindingNames.get(0)).stringValue();
-                BinarySparseInstance newestInstance = stringToInstance(someTable, newLine);
+                BinarySparseInstance newestInstance = stringToInstance(DenseToSparseHash, newLine);
                 instanceList.add(newestInstance);
             }
             result.close();
@@ -143,41 +156,28 @@ public class AssociatorBuilder {
             Metadata metadata = new Metadata(runtime, queryString, algorithm.toString(), rules.size(), concatenatedOptions);
             com.eaio.uuid.UUID uuid = new com.eaio.uuid.UUID();
             setNewestUuid(uuid.toString());
-            AssociatorWriter modelwriter = new AssociatorWriter();
-            if (payload.getMethod().equals("triplestore")) {
-                modelwriter.RDFtoTripleStore(rules, repo, metadata, uuid.toString());
-            } else if (payload.getMethod().equals("native")) {
-                modelwriter.toNativeFile(associator, uuid.toString());
-            } else {
-                loadHashMapsFromTripleStore(repo);
-                List<FakeAssociationRule> filteredRules = reduceRules(realToFakeRules(rules));
-                List<StringFakeAssociationRule> stringRules = intToStringRules(filteredRules);
-                modelwriter.toRDFFile(stringRules, metadata, uuid.toString());
+            AssociatorWriter modelWriter = new AssociatorWriter();
+            switch (payload.getMethod()) {
+                case ("triplestore"):
+                    modelWriter.RDFtoTripleStore(rules, repo, metadata, uuid.toString());
+                    break;
+                case ("native"):
+                    modelWriter.toNativeFile(associator, uuid.toString());
+                    break;
+                case ("RDFFile"):
+                    loadHashMapsFromTripleStore(repo);
+                    List<FakeAssociationRule> filteredRules = reduceRules(realToFakeRules(rules));
+                    List<StringFakeAssociationRule> stringRules = intToStringRules(filteredRules);
+                    modelWriter.toRDFFile(stringRules, metadata, uuid.toString());
+                    break;
+                default:
+                    throw new IllegalArgumentException();
             }
             return metadata;
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private void fileToTripleStore(String fileName, Repository repo) {
-
-        ValueFactory factory = repo.getValueFactory();
-        String location = "http://localhost:8890/DAV";
-        IRI context = factory.createIRI(location);
-        File file = new File(fileName);
-        RepositoryConnection con = repo.getConnection();
-        try {
-            double startTime = System.currentTimeMillis();
-            con.add(file, "", RDFFormat.TURTLE, context);
-            double endTime = System.currentTimeMillis();
-            System.out.println(endTime - startTime);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            con.close();
-        }
     }
 
     List<AssociationRule> getRules(AbstractAssociator associatior) throws IllegalArgumentException {
@@ -194,7 +194,7 @@ public class AssociatorBuilder {
 
     private void loadHashMapsFromTripleStore(Repository repo) {
         RepositoryConnection conn = repo.getConnection();
-        List<String> skillsAsStrings = skillsToStrings(getSkills(conn));
+        List<String> skillsAsStrings = skillsToStrings(getAttributes(conn));
         stringToIntegerHash = createStringToIntegerHash(skillsAsStrings);
         integerToStringHash = createIntegerToStringHash(skillsAsStrings);
         conn.close();
