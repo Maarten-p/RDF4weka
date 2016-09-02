@@ -17,8 +17,7 @@ import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 
 import java.util.Objects;
 
-import static spark.Spark.get;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 public class Main {
 
@@ -32,7 +31,7 @@ public class Main {
     private static RandomTreeClassifier randomTreeClassifier = null;
 
     public static void main(String[] args) {
-
+        port(80);
         String sparqlEndpoint = "http://localhost:8890/sparql";
         SPARQLRepository repo = new SPARQLRepository(sparqlEndpoint);
         repo.initialize();

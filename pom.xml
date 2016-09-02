@@ -12,9 +12,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>Main.Main</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
                 </configuration>
             </plugin>
         </plugins>
@@ -35,6 +49,7 @@
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-repository</artifactId>
             <version>2.0M4</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>
@@ -60,6 +75,7 @@
             <groupId>org.eclipse.rdf4j</groupId>
             <artifactId>rdf4j-rio</artifactId>
             <version>2.0</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.eclipse.rdf4j</groupId>

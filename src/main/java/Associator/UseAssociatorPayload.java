@@ -36,7 +36,7 @@ public class UseAssociatorPayload {
         this.identifier = identifier;
     }
 
-    public String getMethod() {
+    String getMethod() {
         return method;
     }
 

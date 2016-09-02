@@ -43,7 +43,7 @@ public class BuildModelPayload {
         this.algorithm = algorithm;
     }
 
-    private String getMethod() {
+    String getMethod() {
         return method;
     }
 
