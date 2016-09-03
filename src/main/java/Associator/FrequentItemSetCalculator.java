@@ -234,20 +234,7 @@ public class FrequentItemSetCalculator {
     }
 
     private TupleQueryResult getAttributes(RepositoryConnection conn) {
-        String queryString = "prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
-                "prefix esco: <http://data.europa.eu/esco/model#>\n" +
-                "prefix mu: <http://mu.semte.ch/vocabularies/core/>\n" +
-                "\n" +
-                "select DISTINCT ?skillUuid  where {\n" +
-                "  graph <http://localhost:8890/DAV> {\n" +
-                "    ?s a esco:Occupation.\n" +
-                "    ?relation esco:isRelationshipFor ?s.\n" +
-                "    ?relation esco:refersConcept ?skill.\n" +
-                "    ?skill skosxl:prefLabel / skosxl:literalForm ?skilllabel.\n" +
-                "    ?skill mu:uuid ?skillUuid.\n" +
-                "    FILTER ( lang(?skilllabel) = \"en\" )\n" +
-                "  }\n" +
-                "}";
+        String queryString = System.getenv("attributesQuery");
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
         return tupleQuery.evaluate();
     }
