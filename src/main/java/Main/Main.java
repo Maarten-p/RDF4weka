@@ -32,7 +32,7 @@ public class Main {
 
     public static void main(String[] args) {
         port(80);
-        String sparqlEndpoint = "http://localhost:8890/sparql";
+        String sparqlEndpoint = System.getenv("SPARQL_ENDPOINT");
         SPARQLRepository repo = new SPARQLRepository(sparqlEndpoint);
         repo.initialize();
 

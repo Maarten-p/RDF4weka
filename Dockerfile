@@ -8,7 +8,8 @@ RUN         apt-get update && apt-get install -y openjdk-8-jdk weka maven
 
 ADD . /app
 RUN         mkdir config && mv /app/weka-service.ini /config/
-ENV DATA_QUERY="prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> \ 
+
+ENV SPARQL_ENDPOINT="http://localhost:8890/sparql" DATA_QUERY="prefix skosxl: <http://www.w3.org/2008/05/skos-xl#> \
 		    prefix esco: <http://data.europa.eu/esco/model#> \
                     prefix mu: <http://mu.semte.ch/vocabularies/core/> \
                     select group_concat(distinct ?skillUuid; separator=\",\") as ?skillUuid  where { \
