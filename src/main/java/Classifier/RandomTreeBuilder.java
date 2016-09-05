@@ -27,7 +27,7 @@ public class RandomTreeBuilder {
 
     public Metadata buildModel(Repository repo, BuildModelPayload payload) {
         RepositoryConnection conn = repo.getConnection();
-        String queryString = System.getenv("DATA_QUERY");
+        String queryString = System.getenv("CLASSIFIER_DATA_QUERY");
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
         try {
             TupleQueryResult result = tupleQuery.evaluate();

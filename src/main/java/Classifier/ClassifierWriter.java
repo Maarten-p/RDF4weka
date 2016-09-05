@@ -9,9 +9,9 @@ class ClassifierWriter {
 
     void toNativeFile(AbstractClassifier classifier, List<Attribute> newHeader, List<String> oldHeader, String uuid) {
         try {
-            weka.core.SerializationHelper.write(uuid + ".model", classifier);
-            weka.core.SerializationHelper.write(uuid + "-oldheader.model", oldHeader);
-            weka.core.SerializationHelper.write(uuid + "-newheader.model", newHeader);
+            weka.core.SerializationHelper.write("/data/" + uuid + ".model", classifier);
+            weka.core.SerializationHelper.write("/data/" + uuid + "-oldheader.model", oldHeader);
+            weka.core.SerializationHelper.write("/data/" + uuid + "-newheader.model", newHeader);
         } catch (Exception e) {
             e.printStackTrace();
         }

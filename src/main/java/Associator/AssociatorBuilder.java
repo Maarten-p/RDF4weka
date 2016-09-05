@@ -94,7 +94,8 @@ public class AssociatorBuilder {
 
     public Metadata buildModel(Repository repo, BuildModelPayload payload) throws IllegalArgumentException {
         RepositoryConnection conn = repo.getConnection();
-        String queryString = System.getenv("DATA_QUERY");
+        String queryString = System.getenv("ASSOCIATOR_DATA_QUERY");
+        System.out.println(System.getenv("ASSOCIATOR_DATA_QUERY"));
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
 
         try {
@@ -114,6 +115,7 @@ public class AssociatorBuilder {
             result.close();
             conn.close();
 
+            System.out.println(instanceList.size());
             Algorithm algorithm = payload.getAlgorithm();
             AbstractAssociator associator;
             switch (algorithm) {
@@ -140,6 +142,7 @@ public class AssociatorBuilder {
                 concatenatedOptions += optionValue;
             }
             List<AssociationRule> rules = getRules(associator);
+
             Metadata metadata = new Metadata(runtime, queryString, algorithm.toString(), rules.size(), concatenatedOptions);
             com.eaio.uuid.UUID uuid = new com.eaio.uuid.UUID();
             setNewestUuid(uuid.toString());

@@ -31,7 +31,7 @@ public class Main {
     private static RandomTreeClassifier randomTreeClassifier = null;
 
     public static void main(String[] args) {
-        port(80);
+        port(5000);
         String sparqlEndpoint = System.getenv("SPARQL_ENDPOINT");
         SPARQLRepository repo = new SPARQLRepository(sparqlEndpoint);
         repo.initialize();

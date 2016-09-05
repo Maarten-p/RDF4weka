@@ -26,9 +26,9 @@ public class RandomTreeClassifier {
     }
 
     public void loadModelFromNative(UseClassifierPayload payload) throws Exception {
-        classifier = (AbstractClassifier) weka.core.SerializationHelper.read(payload.getIdentifier() + ".model");
-        oldheader = (ArrayList<String>) weka.core.SerializationHelper.read(payload.getIdentifier() + "-oldheader.model");
-        newheader = (ArrayList<Attribute>) weka.core.SerializationHelper.read(payload.getIdentifier() + "-newheader.model");
+        classifier = (AbstractClassifier) weka.core.SerializationHelper.read("/data/" + payload.getIdentifier() + ".model");
+        oldheader = (ArrayList<String>) weka.core.SerializationHelper.read("/data/" + payload.getIdentifier() + "-oldheader.model");
+        newheader = (ArrayList<Attribute>) weka.core.SerializationHelper.read("/data/" + payload.getIdentifier() + "-newheader.model");
     }
 
     private double[] classifyInstance(double[] doubles) throws Exception {
