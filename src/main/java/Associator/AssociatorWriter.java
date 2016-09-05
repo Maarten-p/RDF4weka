@@ -26,7 +26,7 @@ class AssociatorWriter {
 
     void toNativeFile(AbstractAssociator someAssociator, String uuid) {
         try {
-            weka.core.SerializationHelper.write(uuid + ".model", someAssociator);
+            weka.core.SerializationHelper.write("/data/" + uuid + ".model", someAssociator);
         } catch (Exception e) {
             e.printStackTrace();
         }

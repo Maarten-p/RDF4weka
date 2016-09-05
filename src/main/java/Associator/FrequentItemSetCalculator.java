@@ -110,7 +110,7 @@ public class FrequentItemSetCalculator {
 
     private void loadModelFromNative(UseAssociatorPayload payload) throws Exception {
         AssociatorBuilder builder = new AssociatorBuilder();
-        List<AssociationRule> rules = builder.getRules((AbstractAssociator) weka.core.SerializationHelper.read(payload.getIdentifier() + ".model"));
+        List<AssociationRule> rules = builder.getRules((AbstractAssociator) weka.core.SerializationHelper.read("/data/" + payload.getIdentifier() + ".model"));
         List<FakeAssociationRule> newRules = new ArrayList<>();
         for (AssociationRule rule : rules) {
             newRules.add(new FakeAssociationRule(

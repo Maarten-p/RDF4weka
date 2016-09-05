@@ -1,6 +1,6 @@
 package Associator;
 
-class FrequentItem implements Comparable<FrequentItem> {
+public class FrequentItem implements Comparable<FrequentItem> {
     private int score;
     private String item;
 
@@ -18,7 +18,8 @@ class FrequentItem implements Comparable<FrequentItem> {
         return score;
     }
 
-    private String getItem() {
+    //don't change this to private, it is needed by the Main class to convert FrequentItems into JsonNodes. Intellij is lying.
+    public String getItem() {
         return item;
     }
 

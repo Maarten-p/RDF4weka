@@ -1,9 +1,6 @@
 package Main;
 
-import Associator.AssociatorBuilder;
-import Associator.BuildModelPayload;
-import Associator.FrequentItemSetCalculator;
-import Associator.UseAssociatorPayload;
+import Associator.*;
 import Classifier.RandomTreeBuilder;
 import Classifier.RandomTreeClassifier;
 import Classifier.UseClassifierPayload;
@@ -15,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.eclipse.rdf4j.repository.sparql.SPARQLRepository;
 
+import java.util.List;
 import java.util.Objects;
 
 import static spark.Spark.*;
@@ -31,7 +29,7 @@ public class Main {
     private static RandomTreeClassifier randomTreeClassifier = null;
 
     public static void main(String[] args) {
-        port(5000);
+        port(80);
         String sparqlEndpoint = System.getenv("SPARQL_ENDPOINT");
         SPARQLRepository repo = new SPARQLRepository(sparqlEndpoint);
         repo.initialize();
@@ -159,12 +157,30 @@ public class Main {
                 response.status(200);
                 response.type("application/json");
                 if (Objects.equals(payload.getIdentifier(), itemSetCalculator.getIdentifier())) {
-                    return mapper.writeValueAsString(itemSetCalculator.getFrequentItems(payload));
+                    List<FrequentItem> test = itemSetCalculator.getFrequentItems(payload);
+                    ObjectNode objectNode1 = mapper.createObjectNode();
+                    ObjectNode objectNode2 = mapper.createObjectNode();
+                    ObjectNode objectNode3 = mapper.createObjectNode();
+                    JsonNode node = mapper.valueToTree(test);
+                    objectNode1.replace("data", objectNode2);
+                    objectNode2.put("id", payload.getIdentifier());
+                    objectNode2.replace("attributes", objectNode3);
+                    objectNode3.replace("items", node);
+                    return objectNode1.toString();
                 } else {
                     try {
                         itemSetCalculator.loadModel(repo, payload);
                         itemSetCalculator.setIdentifier(payload.getIdentifier());
-                        return mapper.writeValueAsString(itemSetCalculator.getFrequentItems(payload));
+                        List<FrequentItem> test = itemSetCalculator.getFrequentItems(payload);
+                        ObjectNode objectNode1 = mapper.createObjectNode();
+                        ObjectNode objectNode2 = mapper.createObjectNode();
+                        ObjectNode objectNode3 = mapper.createObjectNode();
+                        JsonNode node = mapper.valueToTree(test);
+                        objectNode1.replace("data", objectNode2);
+                        objectNode2.put("id", payload.getIdentifier());
+                        objectNode2.replace("attributes", objectNode3);
+                        objectNode3.replace("items", node);
+                        return objectNode1.toString();
                     } catch (IllegalArgumentException e) {
                         e.printStackTrace();
                         return mapper.writeValueAsString("This is not a valid algorithm");
