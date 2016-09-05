@@ -21,8 +21,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The builder for the RandomTree algorithm. In the future this should extend the ClassifierBuilder class, which does not yet exist.
+ * It builds a RandomTree model from a query and calls ClassifierWriter to write it to disk.
+ */
 public class RandomTreeBuilder {
 
+    /**
+     * The uuid of the most recently build model, to be given to the user so they can identify the model.
+     */
     private String newestUuid;
 
     public Metadata buildModel(Repository repo, BuildModelPayload payload) {

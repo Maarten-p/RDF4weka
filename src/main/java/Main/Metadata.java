@@ -1,5 +1,8 @@
 package Main;
 
+/**
+ * Describes the metadata of an algorithm run.
+ */
 public class Metadata {
 
     private long runTime;
