@@ -9,7 +9,16 @@ RUN         apt-get update && apt-get install -y openjdk-8-jdk weka maven
 ADD . /app
 RUN         mkdir config && mv /app/weka-service.ini /config/
 
+
+VOLUME /data
+WORKDIR /data
+
+EXPOSE 80
+
+RUN         bash /app/firstTime.sh
+
 ENV SPARQL_ENDPOINT="http://localhost:8890/sparql" \
+            GRAPH="http://localhost:8890/DAV" \
             CLASSIFIER_DATA_QUERY="prefix test: <http://test/test> \
                 select ?feature1 ?feature2 ?class where { \
                 graph <http://localhost:8890/DAV> { \
@@ -50,11 +59,5 @@ ENV SPARQL_ENDPOINT="http://localhost:8890/sparql" \
                   } \
                 }"
 
-VOLUME /data
-WORKDIR /data
-
-EXPOSE 80
-
-RUN         bash /app/firstTime.sh
 
 CMD         ["/bin/bash", "/app/startup.sh"]

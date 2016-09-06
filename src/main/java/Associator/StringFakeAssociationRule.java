@@ -2,6 +2,9 @@ package Associator;
 
 import java.util.List;
 
+/**
+ * A class for AssociationRules that use Strings instead of Items
+ */
 class StringFakeAssociationRule {
 
     private List<String> premise;

@@ -1,5 +1,8 @@
 package Associator;
 
+/**
+ * Stores the name of an attribute and its score, used when determining the frequent item set.
+ */
 public class FrequentItem implements Comparable<FrequentItem> {
     private int score;
     private String item;

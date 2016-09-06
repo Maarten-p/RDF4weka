@@ -27,7 +27,8 @@ public class FrequentItemSetCalculator {
      */
     private List<FakeAssociationRule> loadedRules = new ArrayList<>();
     /**
-     * Contains either an UUID that specifies the location of the rules in the triplestore or a file to load the rules from.
+     * Contains an UUID that either specifies the location of the rules in the triplestore or the file to load the rules from.
+     * Used to check whether the requested model is already loaded into memory
      */
     private String identifier = null;
     /**
@@ -60,13 +61,19 @@ public class FrequentItemSetCalculator {
         return lengthOfRules.toString();
     }
 
+    /**
+     * Get all rules that contain one of the attributes given in the payload.
+     *
+     * @param payload Contains a list of attributes
+     * @return All rules that contain one of the given attributes, as strings
+     */
     public List<String> getAllRelatedRules(UseAssociatorPayload payload) {
 
-        List<String> skills = payload.getSkills();
-        List<Integer> skillsAsInt = convertStringToInteger(skills);
+        List<String> attributes = payload.getattributes();
+        List<Integer> attributesAsInt = convertStringToInteger(attributes);
         List<String> relatedRules = new ArrayList<>();
         for (FakeAssociationRule loadedRule : loadedRules) {
-            for (Integer testRule : skillsAsInt) {
+            for (Integer testRule : attributesAsInt) {
                 if (loadedRule.getPremise().contains(testRule) || loadedRule.getConsequence().contains(testRule)) {
                     relatedRules.add(loadedRule.toString());
                     break;
@@ -108,19 +115,34 @@ public class FrequentItemSetCalculator {
         }
     }
 
+    /**
+     * Loads a model from a native .model file. The hashmaps are created in the convertItemToInteger function
+     * @param payload
+     * Contains the identifier by which to find the right file
+     * @throws Exception
+     * Could not read the file
+     */
     private void loadModelFromNative(UseAssociatorPayload payload) throws Exception {
         AssociatorBuilder builder = new AssociatorBuilder();
         List<AssociationRule> rules = builder.getRules((AbstractAssociator) weka.core.SerializationHelper.read("/data/" + payload.getIdentifier() + ".model"));
         List<FakeAssociationRule> newRules = new ArrayList<>();
         for (AssociationRule rule : rules) {
             newRules.add(new FakeAssociationRule(
-                    convertItemToString(rule.getPremise()),
-                    convertItemToString(rule.getConsequence()), rule.getPremiseSupport(), rule.getConsequenceSupport(), rule.getTotalSupport()));
+                    convertItemToInteger(rule.getPremise()),
+                    convertItemToInteger(rule.getConsequence()), rule.getPremiseSupport(), rule.getConsequenceSupport(), rule.getTotalSupport()));
         }
         loadedRules = newRules;
     }
 
-    private List<Integer> convertItemToString(Collection<Item> list) {
+    /**
+     * Converts a Weka Item to an integer. Also adds the string/integer to a int->string
+     * and string->int hashmap, which is used to conserve memory.
+     * @param list
+     * The collection of items to change to integers
+     * @return
+     * A list of integers, the integers can be converted into strings by the hashmaps.
+     */
+    private List<Integer> convertItemToInteger(Collection<Item> list) {
         List<Integer> convertedList = new ArrayList<>();
         for (Item item : list) {
             String string = item.toString().split("=")[0];
@@ -136,13 +158,22 @@ public class FrequentItemSetCalculator {
         return convertedList;
     }
 
-
+    /**
+     * Loads a model from a .RDF file. This is slower than loading from a native file and faster than loading from a triplestore.
+     * It first loads the file into memory and uses other methods to extract the rules and hashmaps.
+     *
+     * @param payload
+     * Contains the identifier of the rdf file.
+     * @throws Exception
+     * Could not read the rdf file
+     */
     private void loadModelFromRDFFile(UseAssociatorPayload payload) throws Exception {
-        File dataDir = new File(payload.getIdentifier() + ".rdf");
+        File dataDir = new File("/data/" + payload.getIdentifier() + ".rdf");
         Repository repo = new SailRepository(new MemoryStore());
         repo.initialize();
         ValueFactory factory = repo.getValueFactory();
 
+        // There might be a better way to do this
         RepositoryConnection con = repo.getConnection();
         con.add(dataDir, "", RDFFormat.TURTLE);
         RepositoryResult<Statement> statements = con.getStatements(null, null, null);
@@ -152,37 +183,65 @@ public class FrequentItemSetCalculator {
         IRI from = factory.createIRI(ns, "from");
         IRI to = factory.createIRI(ns, "to");
 
-        skillsToHash(model, from, false);
-        skillsToHash(model, to, true);
+        attributesToHash(model, from, false);
+        attributesToHash(model, to, true);
         loadRulesFromRDF(payload, repo);
     }
 
-    private void skillsToHash(Model model, IRI filter, boolean checkIfContains) {
+    /**
+     * Builds the hashmaps from the model (which is stored in memory)
+     * @param model
+     * The model, stored in memory
+     * @param filter
+     * The IRI on which to filter to extract the right attributes
+     * @param checkIfContains
+     * false if this is the first time the hashmaps are build, true if this is an expansion of the hashmaps
+     */
+    private void attributesToHash(Model model, IRI filter, boolean checkIfContains) {
         Iterator<Value> iterator = model.filter(null, filter, null).objects().iterator();
         int i = checkIfContains ? stringToIntegerHash.size() : 0;
         while (iterator.hasNext()) {
-            String nextSkill = iterator.next().stringValue();
-            if (!checkIfContains || !stringToIntegerHash.containsKey(nextSkill)) {
-                stringToIntegerHash.put(nextSkill, i);
-                integerToStringHash.put(i, nextSkill);
+            String nextattribute = iterator.next().stringValue();
+            if (!checkIfContains || !stringToIntegerHash.containsKey(nextattribute)) {
+                stringToIntegerHash.put(nextattribute, i);
+                integerToStringHash.put(i, nextattribute);
                 i += 1;
             }
         }
     }
 
+    /**
+     * Loads the model from a triplestore. The slowest method.
+     * @param repo
+     * The repository where the triplestore is located
+     * @param payload
+     * Contains the identifier of the rules in the triplestore
+     */
     private void loadModelFromTripleStore(Repository repo, UseAssociatorPayload payload) {
         loadHashMapsFromTripleStore(repo);
         loadRulesFromRDF(payload, repo);
     }
 
+    /**
+     * Builds the hashmaps by quering all the attributes from the triplestore and going over them
+     * @param repo
+     * The repository where the triplestore is located
+     */
     private void loadHashMapsFromTripleStore(Repository repo) {
         RepositoryConnection conn = repo.getConnection();
-        List<String> skillsAsStrings = skillsToStrings(getAttributes(conn));
-        stringToIntegerHash = createStringToIntegerHash(skillsAsStrings);
-        integerToStringHash = createIntegerToStringHash(skillsAsStrings);
+        List<String> attributesAsStrings = attributesToStrings(getAttributes(conn));
+        stringToIntegerHash = createStringToIntegerHash(attributesAsStrings);
+        integerToStringHash = createIntegerToStringHash(attributesAsStrings);
         conn.close();
     }
 
+    /**
+     * Loads the rules from an RDF repository, can be either a triplestore or a file
+     * @param payload
+     * Contains the identifier of the rules
+     * @param repo
+     * The repository from which to load the rules, can be either a triplestore or a rdf file
+     */
     private void loadRulesFromRDF(UseAssociatorPayload payload, Repository repo) {
         RepositoryConnection conn = repo.getConnection();
         String runUuid = payload.getIdentifier();
@@ -227,54 +286,71 @@ public class FrequentItemSetCalculator {
             result.close();
             conn.close();
             loadedRules = rules;
-            System.out.println(loadedRules.size());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Gets the attributes from a repositoryconnection. The query is stored as a environmental variable. (which is set by the dockerfile)
+     * @param conn
+     * The connection from which to get the attributes
+     * @return
+     * The attributes as a TupleQueryResult
+     */
     private TupleQueryResult getAttributes(RepositoryConnection conn) {
-        String queryString = System.getenv("attributesQuery");
+        String queryString = System.getenv("ATTRIBUTES_QUERY");
         TupleQuery tupleQuery = conn.prepareTupleQuery(QueryLanguage.SPARQL, queryString);
         return tupleQuery.evaluate();
     }
 
-    private ArrayList<String> skillsToStrings(TupleQueryResult skills) {
+    private ArrayList<String> attributesToStrings(TupleQueryResult attributes) {
         ArrayList<String> strings = new ArrayList<>();
-        List<String> bindingNames = skills.getBindingNames();
-        while (skills.hasNext()) {
-            BindingSet bindingSet = skills.next();
+        List<String> bindingNames = attributes.getBindingNames();
+        while (attributes.hasNext()) {
+            BindingSet bindingSet = attributes.next();
             String string = bindingSet.getValue(bindingNames.get(0)).stringValue();
             strings.add(string);
         }
         return strings;
     }
 
-    private HashMap<String, Integer> createStringToIntegerHash(List<String> skills) {
+    private HashMap<String, Integer> createStringToIntegerHash(List<String> attributes) {
         HashMap<String, Integer> someTable = new HashMap<>();
-        for (int i = 0; i < skills.size(); i++) {
-            someTable.put(skills.get(i), i);
+        for (int i = 0; i < attributes.size(); i++) {
+            someTable.put(attributes.get(i), i);
         }
         return someTable;
     }
 
-    private HashMap<Integer, String> createIntegerToStringHash(List<String> skills) {
+    private HashMap<Integer, String> createIntegerToStringHash(List<String> attributes) {
         HashMap<Integer, String> someTable = new HashMap<>();
-        for (int i = 0; i < skills.size(); i++) {
-            someTable.put(i, skills.get(i));
+        for (int i = 0; i < attributes.size(); i++) {
+            someTable.put(i, attributes.get(i));
         }
         return someTable;
     }
 
+    /**
+     * Finds all frequent items of a given list of attributes. The attributes are first converted to
+     * ints to save memory and since comparision of Integers is much faster.
+     * For each rule, which is loaded in memory, it is checked if the given list of attributes contains the premise.
+     * If yes all the consequences that are not yet contained in the resulting list are added to it.
+     * Finally the list is sorted, duplicates are removed and it is returned.
+     * @param payload
+     * Contains the attributes for which to calculate the frequent items.
+     * @return
+     * The list of frequent items, sorted on confidence
+     */
     public List<FrequentItem> getFrequentItems(UseAssociatorPayload payload) {
 
-        List<String> skills = payload.getSkills();
-        List<Integer> skillsAsInt = convertStringToInteger(skills);
+        List<String> attributes = payload.getattributes();
+        List<Integer> attributesAsInt = convertStringToInteger(attributes);
         List<FrequentItem> scores = new ArrayList<>();
         for (FakeAssociationRule rule : loadedRules) {
-            if (skillsAsInt.containsAll(rule.getPremise())) {
+            if (attributesAsInt.containsAll(rule.getPremise())) {
                 for (Integer consequence : rule.getConsequence()) {
-                    if (!skillsAsInt.contains(consequence)) {
+                    if (!attributesAsInt.contains(consequence)) {
                         scores.add(new FrequentItem(rule.getTotalSupport(), integerToStringHash.get(consequence)));
                     }
                 }
@@ -285,11 +361,11 @@ public class FrequentItemSetCalculator {
     }
 
 
-    private List<Integer> convertStringToInteger(List<String> skills) {
-        List<Integer> skillsAsInteger = new ArrayList<>();
-        for (String skill : skills) {
-            skillsAsInteger.add(stringToIntegerHash.get(skill));
+    private List<Integer> convertStringToInteger(List<String> attributes) {
+        List<Integer> attributesAsInteger = new ArrayList<>();
+        for (String attribute : attributes) {
+            attributesAsInteger.add(stringToIntegerHash.get(attribute));
         }
-        return skillsAsInteger;
+        return attributesAsInteger;
     }
 }

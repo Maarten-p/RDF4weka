@@ -2,8 +2,11 @@ package Associator;
 
 import Main.Algorithm;
 
+/**
+ * The expected json format for a request to build a model. (Can be either an Associator or a Classifier, might be split in the future)
+ * Contains the algorithm with which to build a model, the options of the algorithm to use and the method of storage
+ */
 public class BuildModelPayload {
-
 
     private String[] options;
     private Algorithm algorithm;
@@ -33,6 +36,11 @@ public class BuildModelPayload {
         this.method = method;
     }
 
+    /**
+     * Checks whether the given payload is valid.
+     *
+     * @return true if valid, false if not valid
+     */
     public boolean isValid() {
         Algorithm[] values = Algorithm.values();
         for (Algorithm value : values) {
@@ -42,47 +50,13 @@ public class BuildModelPayload {
         return false;
     }
 
+    /**
+     * Inserts default values where possible if null values are given
+     */
     public void insertDefaults() {
 
         if (algorithm == null)
             setAlgorithm(Algorithm.FPGROWTH);
-
-//        if (dataQuery == null || dataQuery.isEmpty()) {
-//            setDataQuery("prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
-//                    "prefix esco: <http://data.europa.eu/esco/model#>\n" +
-//                    "prefix mu: <http://mu.semte.ch/vocabularies/core/>" +
-//                    "select group_concat(distinct ?skillUuid; separator=\",\") as ?skillUuid  where {\n" +
-//                    "  graph <http://localhost:8890/DAV> {\n" +
-//                    "    ?s a esco:Occupation.\n" +
-//                    "    ?relation esco:isRelationshipFor ?s.\n" +
-//                    "    ?relation esco:refersConcept ?skill.\n" +
-//                    "    ?s mu:uuid ?uuid.\n" +
-//                    "    ?s skosxl:prefLabel / skosxl:literalForm ?label.\n" +
-//                    "    ?skill skosxl:prefLabel / skosxl:literalForm ?skilllabel.\n" +
-//                    "    ?skill mu:uuid ?skillUuid.\n" +
-//                    "    FILTER ( lang(?label) = \"en\" )\n" +
-//                    "    FILTER ( lang(?skilllabel) = \"en\" )\n" +
-//                    "  }\n" +
-//                    "}" +
-//                    "group by ?uuid ");
-//        }
-//
-//        if (attributesQuery == null || attributesQuery.isEmpty()) {
-//            setAttributesQuery("prefix skosxl: <http://www.w3.org/2008/05/skos-xl#>\n" +
-//                    "prefix esco: <http://data.europa.eu/esco/model#>\n" +
-//                    "prefix mu: <http://mu.semte.ch/vocabularies/core/>\n" +
-//                    "\n" +
-//                    "select DISTINCT ?skillUuid  where {\n" +
-//                    "  graph <http://localhost:8890/DAV> {\n" +
-//                    "    ?s a esco:Occupation.\n" +
-//                    "    ?relation esco:isRelationshipFor ?s.\n" +
-//                    "    ?relation esco:refersConcept ?skill.\n" +
-//                    "    ?skill skosxl:prefLabel / skosxl:literalForm ?skilllabel.\n" +
-//                    "    ?skill mu:uuid ?skillUuid.\n" +
-//                    "    FILTER ( lang(?skilllabel) = \"en\" )\n" +
-//                    "  }\n" +
-//                    "}");
-//        }
 
         if (options == null) {
             String[] newOptions = new String[7];

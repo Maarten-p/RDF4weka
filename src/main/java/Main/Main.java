@@ -40,7 +40,7 @@ public class Main {
          * to store the resulting list of AssociationRules.
          * Default values will be inserted if some of the values of the payload are null. A json string is returned when the rules are finished.
          */
-        post("/build_model", (request, response) -> {
+        post("/build-model", (request, response) -> {
             ObjectMapper mapper = new ObjectMapper();
             response.header("Content-Type:", "application/vnd.api+json");
             if (!request.headers("Content-Type").equals("application/vnd.api+json")) {
@@ -134,7 +134,7 @@ public class Main {
          * If the identifier is not equal to the identifier of the last request, the rules are loaded from the file or
          * triplestore. They are then stored in memory for the next request.
          */
-        post("/input", (request, response) -> {
+        post("/determine-frequent-items", (request, response) -> {
             ObjectMapper mapper = new ObjectMapper();
             response.header("Content-Type:", "application/vnd.api+json");
             if (!request.headers("Content-Type").equals("application/vnd.api+json")) {

@@ -15,12 +15,15 @@ import weka.core.Instances;
 
 import java.util.*;
 
+/**
+ * Builds an AbstractAssociator.
+ */
 public class AssociatorBuilder {
 
     /**
      * These hashmaps are used to save memory and cpu cycles. When loading the AssociationRules each unique UUID is
      * mapped to an integer. All calculations are done on these integers. When a result needs to be returned the
-     * integers are converted back into strings.
+     * integers are converted back into strings. There are NOT related to the stringToSparseHash.
      */
     private HashMap<String, Integer> stringToIntegerHash = new HashMap<>();
     private HashMap<Integer, String> integerToStringHash = new HashMap<>();
@@ -92,6 +95,14 @@ public class AssociatorBuilder {
         return someTable;
     }
 
+    /**
+     * Builds an AbstractAssociator. The results from the data query are converted into sparse vectors, for example: [a,z,f] with the alphabet as attributes -> [1000010..01]
+     *
+     * @param repo    The repository from which to get the data and attributes
+     * @param payload Contains the algorithm to make the model with, the options for the algorithm and the method of storage for the resulting model/rules
+     * @return A Metadata object that contains metadata about the creation of the model/rules.
+     * @throws IllegalArgumentException The given algorithm is not a valid algorithm
+     */
     public Metadata buildModel(Repository repo, BuildModelPayload payload) throws IllegalArgumentException {
         RepositoryConnection conn = repo.getConnection();
         String queryString = System.getenv("ASSOCIATOR_DATA_QUERY");
@@ -146,9 +157,13 @@ public class AssociatorBuilder {
             setNewestUuid(uuid.toString());
             AssociatorWriter modelWriter = new AssociatorWriter();
             switch (payload.getMethod()) {
-                case ("triplestore"):
-                    modelWriter.RDFtoTripleStore(rules, repo, metadata, uuid.toString());
+                case ("triplestore"): {
+                    loadHashMapsFromTripleStore(repo);
+                    List<FakeAssociationRule> filteredRules = reduceRules(realToFakeRules(rules));
+                    List<StringFakeAssociationRule> stringRules = intToStringRules(filteredRules);
+                    modelWriter.RDFtoTripleStore(stringRules, repo, metadata, uuid.toString());
                     break;
+                }
                 case ("native"):
                     modelWriter.toNativeFile(associator, uuid.toString());
                     break;
@@ -228,6 +243,13 @@ public class AssociatorBuilder {
         return newRules;
     }
 
+    /**
+     * Reduces rules of the following kind: a->b,a->c ==> a->b,c
+     * @param oldRules
+     * The rules to be reduced
+     * @return
+     * The reduced rules
+     */
     private List<FakeAssociationRule> reduceRules(List<FakeAssociationRule> oldRules) {
 
         HashMap<List<Integer>, List<Integer>> someTable = new HashMap<>();

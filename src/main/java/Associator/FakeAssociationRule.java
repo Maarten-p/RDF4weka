@@ -2,6 +2,9 @@ package Associator;
 
 import java.util.List;
 
+/**
+ * A class for AssociationRules that contains integers instead of items to save memory.
+ */
 class FakeAssociationRule {
 
     private List<Integer> premise;

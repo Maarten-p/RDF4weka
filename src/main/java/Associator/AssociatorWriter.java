@@ -14,16 +14,23 @@ import org.eclipse.rdf4j.rio.RDFWriter;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.sail.memory.MemoryStore;
 import weka.associations.AbstractAssociator;
-import weka.associations.AssociationRule;
-import weka.associations.Item;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * A helper class that writes an AbstractAssociator to a file/triplestore
+ */
 class AssociatorWriter {
 
+    /**
+     * Writes an Associator to a file, using the given uuid as filename. This is the fastest method.
+     *
+     * @param someAssociator The model to write to file
+     * @param uuid           The unique identifier of the model, which becomes the file name
+     */
     void toNativeFile(AbstractAssociator someAssociator, String uuid) {
         try {
             weka.core.SerializationHelper.write("/data/" + uuid + ".model", someAssociator);
@@ -32,6 +39,18 @@ class AssociatorWriter {
         }
     }
 
+    /**
+     * Writes an Associator to a RDF file, using the given uuid as filename.
+     * This is slower than a native file, but a RDF file can be used for other purposes.
+     * Each statement is individually written to disk, he rules are NOT written to disk in batches, the code
+     * should be made more straightforward using one loop.
+     * @param rules
+     * The rules to write to a RDF file
+     * @param metadata
+     * The metadata of the creation of the rules, which are also written to the file.
+     * @param uuid
+     * The identifier, which becomes the filename of the RDF file.
+     */
     void toRDFFile(List<StringFakeAssociationRule> rules, Metadata metadata, String uuid) {
 
         File dataDir = new File("model.rdf");
@@ -48,7 +67,7 @@ class AssociatorWriter {
 
         RDFWriter writer;
         try {
-            FileOutputStream out = new FileOutputStream(uuid + ".rdf");
+            FileOutputStream out = new FileOutputStream("/data/" + uuid + ".rdf");
             writer = Rio.createWriter(RDFFormat.TURTLE, out);
         } catch (Exception e) {
             e.printStackTrace();
@@ -105,7 +124,16 @@ class AssociatorWriter {
 
     }
 
-    void RDFtoTripleStore(List<AssociationRule> rules, Repository repo, Metadata metadata, String uuid) {
+    /**
+     * Writes an Associator to a triplestore, using the given uuid in the name of the "root" node. This is slower than writing it to a file.
+     * The rules are written in batches to make sure the query doesn't time out and to prevent memory problems.
+     *
+     * @param rules    The rules to write to the triplestore
+     * @param repo     The repository to write to
+     * @param metadata The metadata of the creation of the rules, which are also written to the file.
+     * @param uuid     The identifier, which is used in the name of the "root" node.
+     */
+    void RDFtoTripleStore(List<StringFakeAssociationRule> rules, Repository repo, Metadata metadata, String uuid) {
 
         Model model = new LinkedHashModel();
         ValueFactory factory = repo.getValueFactory();
@@ -128,7 +156,7 @@ class AssociatorWriter {
         model.add(wekaService, totalTransactions, factory.createLiteral(metadata.getTotalRows()));
         model.add(wekaService, options, factory.createLiteral(metadata.getOptions()));
 
-        String location = "http://localhost:8890/DAV";
+        String location = System.getenv("GRAPH");
         IRI context = factory.createIRI(location);
         RepositoryConnection conn = repo.getConnection();
         conn.add(model, context);
@@ -141,24 +169,24 @@ class AssociatorWriter {
         IRI totalSupport = factory.createIRI(ns, "totalSupport");
 
 
-        Iterator<AssociationRule> iterator = rules.iterator();
+        Iterator<StringFakeAssociationRule> iterator = rules.iterator();
         int rulesPerStep = 50;
         for (int i = 0; i < Math.ceil(rules.size() / ((double) rulesPerStep)); i++) {
             int j = 0;
             Model ruleModel = new LinkedHashModel();
             while (iterator.hasNext() && j < rulesPerStep) {
-                AssociationRule currentRule = iterator.next();
+                StringFakeAssociationRule currentRule = iterator.next();
                 com.eaio.uuid.UUID uuidRule = new com.eaio.uuid.UUID();
                 IRI ruleInstance = factory.createIRI(ns, "rules/" + uuidRule.toString());
                 ruleModel.add(wekaService, rule, ruleInstance);
                 ruleModel.add(ruleInstance, UUID, factory.createLiteral(uuidRule.toString()));
                 ruleModel.add(ruleInstance, RDF.TYPE, rule);
 
-                for (Item premise : currentRule.getPremise()) {
-                    ruleModel.add(ruleInstance, from, factory.createLiteral(premise.toString().split("=")[0]));
+                for (String premise : currentRule.getPremise()) {
+                    ruleModel.add(ruleInstance, from, factory.createLiteral(premise));
                 }
-                for (Item consequence : currentRule.getConsequence()) {
-                    ruleModel.add(ruleInstance, to, factory.createLiteral(consequence.toString().split("=")[0]));
+                for (String consequence : currentRule.getConsequence()) {
+                    ruleModel.add(ruleInstance, to, factory.createLiteral(consequence));
                 }
                 ruleModel.add(ruleInstance, premiseSupport, factory.createLiteral(currentRule.getPremiseSupport()));
                 ruleModel.add(ruleInstance, consequenceSupport, factory.createLiteral(currentRule.getConsequenceSupport()));

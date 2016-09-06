@@ -32,6 +32,14 @@ public class RandomTreeBuilder {
      */
     private String newestUuid;
 
+    /**
+     * Creates a list of instances from data from the database and uses them to build a classifier. It then writes this model + headers to disk as a native .model file.
+     *
+     * @param repo    The repository that contains the data to be queried
+     * @param payload Contains the algorithm and its options to use, and the method for storing the resulting model. Given by the user from the frontend.
+     *                The method is currently unnecessary for a classifier since storing to disk is the only option
+     * @return Returns a Metadata object with metadata information about the construction of the model
+     */
     public Metadata buildModel(Repository repo, BuildModelPayload payload) {
         RepositoryConnection conn = repo.getConnection();
         String queryString = System.getenv("CLASSIFIER_DATA_QUERY");
@@ -52,6 +60,7 @@ public class RandomTreeBuilder {
 
             Algorithm algorithm = payload.getAlgorithm();
             AbstractClassifier classifier;
+            //can be expanded with other Classifier algorithms
             switch (algorithm) {
                 case RANDOMTREE: {
                     classifier = new RandomTree();
@@ -76,7 +85,6 @@ public class RandomTreeBuilder {
             setNewestUuid(uuid.toString());
             Evaluation test = new Evaluation(instanceList);
             test.evaluateModel(classifier, instanceList);
-            System.out.println(test.toSummaryString());
             ClassifierWriter writer = new ClassifierWriter();
             writer.toNativeFile(classifier, stringsToAttributes(transformedNames), names, uuid.toString());
             return metadata;
